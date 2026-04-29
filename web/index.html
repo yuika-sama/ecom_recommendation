@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Dashboard Phân tích Cảm xúc Bình luận Sản phẩm & Hệ thống Gợi ý E-commerce Việt Nam" />
+  <title>SentimentIQ — Khai phá Dữ liệu Đa phương tiện</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🧠</span>
+    <span class="logo-text">SentimentIQ</span>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item active" data-tab="overview" id="nav-overview">
+      <span class="nav-icon">📊</span>
+      <span>Tổng quan</span>
+    </button>
+    <button class="nav-item" data-tab="sentiment" id="nav-sentiment">
+      <span class="nav-icon">💬</span>
+      <span>Phân tích cảm xúc</span>
+    </button>
+    <button class="nav-item" data-tab="cluster" id="nav-cluster">
+      <span class="nav-icon">🧩</span>
+      <span>Phân cụm chủ đề</span>
+    </button>
+    <button class="nav-item" data-tab="rules" id="nav-rules">
+      <span class="nav-icon">🔗</span>
+      <span>Luật kết hợp</span>
+    </button>
+    <button class="nav-item" data-tab="recommend" id="nav-recommend">
+      <span class="nav-icon">🎯</span>
+      <span>Gợi ý sản phẩm</span>
+    </button>
+    <div class="nav-divider"></div>
+    <a class="nav-item" href="client.html" id="nav-client">
+      <span class="nav-icon">🛍️</span>
+      <span>Trang Khách hàng</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="api-status" id="api-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Đang kết nối...</span>
+    </span>
+  </div>
+</aside>
+
+<!-- ─── MAIN CONTENT ─── -->
+<main class="main-content">
+
+  <!-- HEADER -->
+  <header class="topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Toggle menu">☰</button>
+    <div class="topbar-title" id="topbar-title">Tổng quan hệ thống</div>
+    <div class="topbar-badge">E-commerce · Shopee & Tiki · 🇻🇳</div>
+  </header>
+
+  <!-- ── TAB: OVERVIEW ── -->
+  <section class="tab-pane active" id="tab-overview">
+    <div class="section-header">
+      <h1>📊 Tổng quan Hệ thống</h1>
+      <p class="section-sub">Thống kê tổng hợp từ dữ liệu bình luận Shopee & Tiki</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card" id="stat-total">
+        <div class="stat-icon">💬</div>
+        <div class="stat-body">
+          <div class="stat-value" id="val-total">—</div>
+          <div class="stat-label">Tổng bình luận</div>
+        </div>
+      </div>
+      <div class="stat-card positive" id="stat-positive">
+        <div class="stat-icon">😊</div>
+        <div class="stat-body">
+          <div class="stat-value" id="val-positive">—</div>
+          <div class="stat-label">Bình luận tích cực</div>
+        </div>
+      </div>
+      <div class="stat-card negative" id="stat-negative">
+        <div class="stat-icon">😞</div>
+        <div class="stat-body">
+          <div class="stat-value" id="val-negative">—</div>
+          <div class="stat-label">Bình luận tiêu cực</div>
+        </div>
+      </div>
+      <div class="stat-card info" id="stat-models">
+        <div class="stat-icon">🤖</div>
+        <div class="stat-body">
+          <div class="stat-value" id="val-models">—</div>
+          <div class="stat-label">Models đang chạy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Phân phối cảm xúc</h3>
+        <div class="chart-wrap">
+          <canvas id="chart-sentiment-dist"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Nguồn dữ liệu</h3>
+        <div class="chart-wrap">
+          <canvas id="chart-sources"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="model-status-grid">
+      <h3>Trạng thái Models</h3>
+      <div class="model-badges" id="model-badges">
+        <div class="model-badge loading">Naive Bayes</div>
+        <div class="model-badge loading">GMM Clustering</div>
+        <div class="model-badge loading">Recommender</div>
+        <div class="model-badge loading">Assoc. Rules</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TAB: SENTIMENT ── -->
+  <section class="tab-pane" id="tab-sentiment">
+    <div class="section-header">
+      <h1>💬 Phân tích Cảm xúc</h1>
+      <p class="section-sub">Phân loại bình luận: Tích cực / Tiêu cực bằng Naive Bayes</p>
+    </div>
+
+    <div class="input-card">
+      <label class="input-label" for="sentiment-input">Nhập bình luận cần phân tích:</label>
+      <textarea
+        id="sentiment-input"
+        class="text-input"
+        rows="4"
+        placeholder="Ví dụ: Sản phẩm rất tốt, giao hàng nhanh, đóng gói cẩn thận!"
+      ></textarea>
+      <div class="input-actions">
+        <button class="btn-primary" id="btn-analyze-sentiment" onclick="analyzeSentiment()">
+          🔍 Phân tích
+        </button>
+        <button class="btn-secondary" onclick="clearSentiment()">✕ Xóa</button>
+      </div>
+    </div>
+
+    <div class="result-card hidden" id="sentiment-result">
+      <div class="result-header">
+        <span class="result-badge" id="sentiment-badge">—</span>
+        <span class="result-confidence" id="sentiment-confidence">—</span>
+      </div>
+      <div class="result-bars">
+        <div class="bar-row">
+          <span class="bar-label">Tích cực</span>
+          <div class="bar-track">
+            <div class="bar-fill positive-bar" id="bar-positive" style="width:0%"></div>
+          </div>
+          <span class="bar-pct" id="pct-positive">0%</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Tiêu cực</span>
+          <div class="bar-track">
+            <div class="bar-fill negative-bar" id="bar-negative" style="width:0%"></div>
+          </div>
+          <span class="bar-pct" id="pct-negative">0%</span>
+        </div>
+      </div>
+      <div class="processed-text">
+        <strong>Văn bản đã xử lý:</strong>
+        <span id="processed-text-display">—</span>
+      </div>
+    </div>
+
+    <!-- Ví dụ nhanh -->
+    <div class="examples-section">
+      <h3>⚡ Thử nhanh</h3>
+      <div class="example-chips">
+        <button class="chip" onclick="setExample('Sản phẩm chất lượng tốt, giao hàng siêu nhanh, rất hài lòng!')">Tích cực 😊</button>
+        <button class="chip" onclick="setExample('Hàng nhận được không giống ảnh, chất lượng kém, thất vọng lắm!')">Tiêu cực 😞</button>
+        <button class="chip" onclick="setExample('Mua lần 2 rồi, sp ok, ship nhanh, ko có gì phàn nàn cả')">Tiếng lóng 🗣️</button>
+        <button class="chip" onclick="setExample('Đóng gói cẩu thả, hàng bị móp méo, shop cần cải thiện!')">Đóng gói ❌</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TAB: CLUSTER ── -->
+  <section class="tab-pane" id="tab-cluster">
+    <div class="section-header">
+      <h1>🧩 Phân cụm Chủ đề</h1>
+      <p class="section-sub">Nhóm bình luận theo chủ đề bằng EM (Gaussian Mixture Model)</p>
+    </div>
+
+    <div class="input-card">
+      <label class="input-label" for="cluster-input">Nhập bình luận cần phân cụm:</label>
+      <textarea
+        id="cluster-input"
+        class="text-input"
+        rows="4"
+        placeholder="Ví dụ: Giao hàng chậm quá, đã 5 ngày vẫn chưa nhận được hàng..."
+      ></textarea>
+      <div class="input-actions">
+        <button class="btn-primary" id="btn-cluster" onclick="analyzeCluster()">
+          🧩 Phân cụm
+        </button>
+        <button class="btn-secondary" onclick="clearCluster()">✕ Xóa</button>
+      </div>
+    </div>
+
+    <div class="result-card hidden" id="cluster-result">
+      <div class="cluster-topic" id="cluster-topic">—</div>
+      <div class="cluster-probs" id="cluster-probs"></div>
+    </div>
+
+    <div class="topic-legend">
+      <h3>📌 Các chủ đề phân cụm</h3>
+      <div class="topic-grid" id="topic-grid">
+        <div class="topic-item" style="--c:#6366f1">
+          <span class="topic-dot"></span>Chất lượng sản phẩm
+        </div>
+        <div class="topic-item" style="--c:#f59e0b">
+          <span class="topic-dot"></span>Giao hàng & Vận chuyển
+        </div>
+        <div class="topic-item" style="--c:#10b981">
+          <span class="topic-dot"></span>Đóng gói
+        </div>
+        <div class="topic-item" style="--c:#3b82f6">
+          <span class="topic-dot"></span>Giá cả & Khuyến mãi
+        </div>
+        <div class="topic-item" style="--c:#ec4899">
+          <span class="topic-dot"></span>Dịch vụ khách hàng
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TAB: RULES ── -->
+  <section class="tab-pane" id="tab-rules">
+    <div class="section-header">
+      <h1>🔗 Luật Kết hợp</h1>
+      <p class="section-sub">Các cặp từ thường xuất hiện cùng nhau trong bình luận tiêu cực (FP-Growth)</p>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-item">
+        <label for="filter-lift">Lift tối thiểu</label>
+        <input type="number" id="filter-lift" value="1.0" min="1" step="0.1" class="filter-input" />
+      </div>
+      <div class="filter-item">
+        <label for="filter-conf">Confidence tối thiểu</label>
+        <input type="number" id="filter-conf" value="0.5" min="0" max="1" step="0.05" class="filter-input" />
+      </div>
+      <div class="filter-item">
+        <label for="filter-topk">Số luật</label>
+        <input type="number" id="filter-topk" value="20" min="5" max="100" class="filter-input" />
+      </div>
+      <button class="btn-primary" onclick="loadRules()">🔍 Lọc</button>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table" id="rules-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Tiền đề (If)</th>
+            <th>Hậu quả (Then)</th>
+            <th>Support</th>
+            <th>Confidence</th>
+            <th>Lift</th>
+          </tr>
+        </thead>
+        <tbody id="rules-tbody">
+          <tr><td colspan="6" class="empty-row">Nhấn "Lọc" để tải luật kết hợp</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── TAB: RECOMMEND ── -->
+  <section class="tab-pane" id="tab-recommend">
+    <div class="section-header">
+      <h1>🎯 Gợi ý Sản phẩm</h1>
+      <p class="section-sub">Tìm kiếm sản phẩm thông minh dựa trên Content-based Filtering</p>
+    </div>
+
+    <div class="search-bar-wrapper">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="recommend-input"
+          class="search-input"
+          placeholder="Tìm kiếm sản phẩm... (VD: áo thun cotton, điện thoại pin trâu)"
+          onkeydown="if(event.key==='Enter') searchRecommend()"
+        />
+        <button class="btn-primary search-btn" onclick="searchRecommend()">Tìm</button>
+      </div>
+      <div class="topk-control">
+        <label for="topk-input">Số kết quả:</label>
+        <input type="number" id="topk-input" value="10" min="3" max="50" class="filter-input" />
+      </div>
+    </div>
+
+    <div class="recommend-suggestions">
+      <span>Thử tìm:</span>
+      <button class="chip" onclick="quickSearch('áo thun nam cotton')">áo thun nam cotton</button>
+      <button class="chip" onclick="quickSearch('điện thoại camera đẹp')">điện thoại camera đẹp</button>
+      <button class="chip" onclick="quickSearch('kem dưỡng da mặt')">kem dưỡng da mặt</button>
+      <button class="chip" onclick="quickSearch('giày sneaker nữ')">giày sneaker nữ</button>
+    </div>
+
+    <div class="products-grid" id="products-grid">
+      <div class="empty-state">
+        <div class="empty-icon">🛍️</div>
+        <p>Nhập từ khóa để tìm sản phẩm phù hợp</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

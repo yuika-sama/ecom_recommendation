@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="SentimentIQ — Trang mua sắm thông minh: đánh giá sản phẩm, nhận gợi ý phù hợp"/>
+  <title>SentimentIQ — Trải nghiệm Khách hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/client.css"/>
+</head>
+<body>
+
+<!-- ─── SIDEBAR (giống Dashboard) ─── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🧠</span>
+    <span class="logo-text">SentimentIQ</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="index.html" id="nav-dashboard">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </a>
+    <div class="nav-divider"></div>
+    <a class="nav-item active" href="client.html" id="nav-client">
+      <span class="nav-icon">🛍️</span><span>Trang Khách hàng</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="api-status" id="api-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Đang kết nối...</span>
+    </span>
+  </div>
+</aside>
+
+<!-- ─── MAIN ─── -->
+<main class="main-content">
+  <header class="topbar">
+    <button class="menu-btn" id="menu-btn" aria-label="Toggle menu">☰</button>
+    <div class="topbar-title">🛍️ Trải nghiệm Mua sắm Thông minh</div>
+    <div class="topbar-badge">Powered by SentimentIQ AI</div>
+  </header>
+
+  <div class="client-wrapper">
+
+    <!-- ══ SECTION 1: Chọn sản phẩm ══ -->
+    <section class="client-section" id="section-product">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <h2>Chọn Sản phẩm</h2>
+        <p>Tìm và chọn sản phẩm bạn muốn đánh giá</p>
+      </div>
+
+      <div class="product-search-wrap">
+        <div class="product-search-box">
+          <span class="search-icon-sm">🔍</span>
+          <input type="text" id="product-search-input" class="product-search-input"
+            placeholder="Nhập tên sản phẩm để tìm kiếm..." autocomplete="off"/>
+          <span class="search-clear hidden" id="search-clear" onclick="clearProductSearch()">✕</span>
+        </div>
+        <div class="product-dropdown hidden" id="product-dropdown"></div>
+      </div>
+
+      <!-- Danh mục nhanh -->
+      <div class="category-chips" id="category-chips">
+        <span class="chips-label">Danh mục:</span>
+        <!-- Sinh động bởi JS -->
+      </div>
+
+      <!-- Sản phẩm đã chọn -->
+      <div class="selected-product-card hidden" id="selected-product-card">
+        <div class="selected-badge">✅ Đã chọn</div>
+        <div class="selected-body">
+          <div class="selected-emoji" id="sel-emoji">📦</div>
+          <div class="selected-info">
+            <div class="selected-name" id="sel-name">—</div>
+            <div class="selected-meta">
+              <span class="selected-cat" id="sel-cat">—</span>
+              <span class="selected-price" id="sel-price">—</span>
+            </div>
+          </div>
+          <button class="btn-change" onclick="clearProductSelection()">Đổi sản phẩm</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ SECTION 2: Đánh giá ══ -->
+    <section class="client-section" id="section-review">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <h2>Viết Đánh giá</h2>
+        <p>Chia sẻ trải nghiệm của bạn với sản phẩm</p>
+      </div>
+
+      <div class="review-form-card" id="review-form-card">
+        <!-- Star Rating -->
+        <div class="star-section">
+          <label class="form-label">Đánh giá của bạn</label>
+          <div class="star-rating" id="star-rating" role="group" aria-label="Rating">
+            <span class="star" data-val="1" onclick="setRating(1)" onmouseover="hoverRating(1)" onmouseout="resetHover()">★</span>
+            <span class="star" data-val="2" onclick="setRating(2)" onmouseover="hoverRating(2)" onmouseout="resetHover()">★</span>
+            <span class="star" data-val="3" onclick="setRating(3)" onmouseover="hoverRating(3)" onmouseout="resetHover()">★</span>
+            <span class="star" data-val="4" onclick="setRating(4)" onmouseover="hoverRating(4)" onmouseout="resetHover()">★</span>
+            <span class="star" data-val="5" onclick="setRating(5)" onmouseover="hoverRating(5)" onmouseout="resetHover()">★</span>
+          </div>
+          <span class="rating-text" id="rating-text">Chưa đánh giá</span>
+        </div>
+
+        <!-- Comment -->
+        <div class="comment-section">
+          <label class="form-label" for="review-comment">Bình luận của bạn</label>
+          <textarea id="review-comment" class="review-textarea" rows="4"
+            placeholder="Mô tả trải nghiệm của bạn với sản phẩm này..."></textarea>
+          <div class="char-count"><span id="char-count">0</span> / 500 ký tự</div>
+        </div>
+
+        <!-- Submit -->
+        <div class="form-actions">
+          <button class="btn-submit" id="btn-submit-review" onclick="submitReview()">
+            <span class="btn-icon">🚀</span> Gửi đánh giá & Nhận gợi ý
+          </button>
+          <button class="btn-clear-form" onclick="clearReviewForm()">Xóa</button>
+        </div>
+
+        <div class="review-hint" id="review-hint">
+          ⚠️ Vui lòng chọn sản phẩm trước khi gửi đánh giá
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ SECTION 3: Kết quả phân tích ══ -->
+    <section class="client-section hidden" id="section-results">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <h2>Kết quả Phân tích</h2>
+        <p>AI đã phân tích đánh giá của bạn</p>
+      </div>
+
+      <div class="results-grid">
+        <!-- Sentiment Card -->
+        <div class="result-card-new" id="rc-sentiment">
+          <div class="rc-icon" id="rc-sentiment-icon">💬</div>
+          <div class="rc-title">Cảm xúc bình luận</div>
+          <div class="rc-value" id="rc-sentiment-val">—</div>
+          <div class="rc-bars" id="rc-sentiment-bars"></div>
+        </div>
+
+        <!-- Rating Card -->
+        <div class="result-card-new" id="rc-rating">
+          <div class="rc-icon">⭐</div>
+          <div class="rc-title">Phân tích Rating</div>
+          <div class="rc-stars" id="rc-stars">☆☆☆☆☆</div>
+          <div class="rc-value" id="rc-rating-val">—</div>
+        </div>
+
+        <!-- Overall Card -->
+        <div class="result-card-new" id="rc-overall">
+          <div class="rc-icon" id="rc-overall-icon">🎯</div>
+          <div class="rc-title">Kết luận tổng hợp</div>
+          <div class="rc-value" id="rc-overall-val">—</div>
+          <div class="rc-sub" id="rc-cluster-val">—</div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="rec-section" id="rec-section">
+        <h3 class="rec-title" id="rec-title">🎯 Gợi ý sản phẩm cho bạn</h3>
+        <div class="rec-grid" id="rec-grid"></div>
+      </div>
+    </section>
+
+    <!-- ══ SECTION 4: Lịch sử đánh giá (localStorage) ══ -->
+    <section class="client-section" id="section-history">
+      <div class="section-label">
+        <span class="section-num">04</span>
+        <h2>Lịch sử Đánh giá</h2>
+        <p>Các đánh giá được lưu trên thiết bị của bạn</p>
+        <button class="btn-clear-history" onclick="clearHistory()">🗑️ Xóa lịch sử</button>
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="history-empty">Chưa có đánh giá nào. Hãy thử đánh giá sản phẩm đầu tiên!</div>
+      </div>
+    </section>
+
+  </div><!-- end client-wrapper -->
+</main>
+
+<!-- ═══ CHATBOT FLOATING ═══ -->
+<button class="chatbot-fab" id="chatbot-fab" onclick="toggleChatbot()" aria-label="Mở chatbot">
+  <span class="fab-icon" id="fab-icon">🤖</span>
+  <span class="fab-label">AI Trợ lý</span>
+  <span class="fab-badge hidden" id="fab-badge">1</span>
+</button>
+
+<div class="chatbot-panel hidden" id="chatbot-panel">
+  <div class="chatbot-header">
+    <div class="chatbot-header-info">
+      <span class="chatbot-avatar">🤖</span>
+      <div>
+        <div class="chatbot-name">AI Trợ lý Mua sắm</div>
+        <div class="chatbot-subtitle" id="chatbot-subtitle">Powered by SentimentIQ</div>
+      </div>
+    </div>
+    <button class="chatbot-close" onclick="toggleChatbot()" aria-label="Đóng">✕</button>
+  </div>
+
+  <div class="chatbot-messages" id="chatbot-messages">
+    <div class="chat-bubble bot">
+      Xin chào! 👋 Tôi là <strong>SentimentIQ Bot</strong>.<br/>
+      Tôi có thể giúp bạn:<br/>
+      🔍 Tìm kiếm sản phẩm<br/>
+      💬 Phân tích đánh giá<br/>
+      🎯 Gợi ý sản phẩm phù hợp
+    </div>
+  </div>
+
+  <div class="chatbot-suggestions" id="chat-suggestions">
+    <button class="chat-chip" onclick="quickChat('tìm áo thun nam cotton')">áo thun nam</button>
+    <button class="chat-chip" onclick="quickChat('điện thoại pin trâu')">điện thoại</button>
+    <button class="chat-chip" onclick="quickChat('kem dưỡng da mặt')">kem dưỡng da</button>
+  </div>
+
+  <div class="chatbot-input-wrap">
+    <input type="text" id="chatbot-input" class="chatbot-input"
+      placeholder="Nhập tin nhắn..."
+      onkeydown="if(event.key==='Enter') sendChatMessage()"/>
+    <button class="chatbot-send" onclick="sendChatMessage()" aria-label="Gửi">➤</button>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<script src="js/client.js"></script>
+</body>
+</html>
