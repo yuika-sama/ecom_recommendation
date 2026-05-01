@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SentimentIQ - 3D Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      height: 100vh;
+      background: var(--bg-base);
+    }
+    #canvas-container {
+      flex: 1;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1d2e, #0f1117);
+      position: relative;
+    }
+    #chat-container {
+      width: 400px;
+      height: 100%;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,17,23,0.8);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-btn {
+      color: var(--text-primary);
+      text-decoration: none;
+      font-size: 1.2rem;
+      background: rgba(255,255,255,0.1);
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.2); }
+    .chat-header h2 { font-size: 1.2rem; margin-bottom: 4px; }
+    .chat-header p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .chat-bubble {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease;
+    }
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.bot {
+      align-self: flex-start;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-bottom-left-radius: 4px;
+    }
+    .chat-bubble strong { color: #a78bfa; }
+    
+    .chat-input-area {
+      padding: 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      border-radius: 20px;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus { border-color: var(--accent-purple); }
+    .chat-btn {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chat-btn:hover { opacity: 0.9; }
+
+    /* Product Cards inside chat */
+    .product-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .product-item {
+      background: rgba(15,17,23,0.5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .product-item:hover { background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.3); }
+    .product-item-name { flex: 1; font-size: 0.85rem; font-weight: 500; }
+    .product-item-price { font-size: 0.8rem; color: var(--accent-amber); font-weight: 600; }
+  </style>
+
+  <!-- Import maps polyfill -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "three": "https://esm.sh/three@0.160.0",
+        "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+        "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.12?external=react,react-dom,three",
+        "@react-three/drei": "https://esm.sh/@react-three/drei@9.96.1?external=react,react-dom,three,@react-three/fiber",
+        "@pixiv/three-vrm": "https://esm.sh/@pixiv/three-vrm@3.0.0?external=three",
+        "@pixiv/three-vrm-animation": "https://esm.sh/@pixiv/three-vrm-animation@3.0.0?external=three,@pixiv/three-vrm"
+      }
+    }
+  </script>
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Chat Container -->
+  <div id="chat-container">
+    <div class="chat-header">
+      <a href="index.html" class="back-btn" title="Trở về">←</a>
+      <div>
+        <h2>SentimentIQ AI 3D</h2>
+        <p>Trợ lý mua sắm thông minh</p>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-bubble bot">Xin chào! Tôi là trợ lý ảo của bạn. Bạn cần tìm gì hôm nay?</div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Hỏi tôi bất cứ điều gì..." />
+      <button class="chat-btn" id="send-btn">➤</button>
+    </div>
+  </div>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useRef, useEffect } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+    import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
+    import { Canvas, useFrame } from '@react-three/fiber';
+    import { OrbitControls, Text, Environment } from '@react-three/drei';
+
+    class PatchedVRMAnimationLoaderPlugin extends VRMAnimationLoaderPlugin {
+      async afterRoot(gltf) {
+        const json = gltf.parser.json;
+        if (json.extensions && json.extensions.VRMC_vrm_animation) {
+          if (!json.extensions.VRMC_vrm_animation.specVersion) {
+            json.extensions.VRMC_vrm_animation.specVersion = '1.0';
+            console.warn('Patched missing specVersion in VRMC_vrm_animation to 1.0');
+          }
+        }
+        return await super.afterRoot(gltf);
+      }
+    }
+
+    const Avatar = ({ gesture }) => {
+      const [vrm, setVrm] = useState(null);
+      const [mixer, setMixer] = useState(null);
+      const [currentAction, setCurrentAction] = useState(null);
+      const animationsRef = useRef({});
+
+      // Load VRM Model
+      useEffect(() => {
+        const loader = new GLTFLoader();
+        loader.register((parser) => new VRMLoaderPlugin(parser));
+        loader.register((parser) => new PatchedVRMAnimationLoaderPlugin(parser));
+
+        loader.load(
+          'vrm/eida.vrm',
+          (gltf) => {
+            const loadedVrm = gltf.userData.vrm;
+            // Xoay nhân vật đối diện camera
+            loadedVrm.scene.rotation.y = Math.PI;
+            setVrm(loadedVrm);
+
+            const newMixer = new THREE.AnimationMixer(loadedVrm.scene);
+            setMixer(newMixer);
+          },
+          (progress) => console.log('Loading VRM...', 100.0 * (progress.loaded / progress.total), '%'),
+          (err) => console.error('Failed to load VRM', err)
+        );
+      }, []);
+
+      // Cập nhật Mixer và VRM trong loop rendering
+      useFrame((state, delta) => {
+        if (mixer) mixer.update(delta);
+        if (vrm) vrm.update(delta);
+      });
+
+      // Thay đổi animation dựa theo gesture
+      useEffect(() => {
+        if (!vrm || !mixer) return;
+
+        const animName = gesture || 'Idle';
+
+        // Hàm tiện ích phát animation
+        const playAction = (nextAction) => {
+          if (!nextAction) return;
+          nextAction.reset().play();
+          
+          if (currentAction && currentAction !== nextAction) {
+            nextAction.crossFadeFrom(currentAction, 0.5, true);
+          }
+          setCurrentAction(nextAction);
+        };
+
+        // Nếu đã cache, chạy luôn
+        if (animationsRef.current[animName]) {
+          playAction(animationsRef.current[animName]);
+          return;
+        }
+
+        // Nếu chưa cache, tải file VRMA
+        const loader = new GLTFLoader();
+        loader.register((parser) => new PatchedVRMAnimationLoaderPlugin(parser));
+
+        loader.load(
+          `vrm/VRMA/${animName}.vrma`,
+          (gltf) => {
+            let clip = null;
+            if (gltf.userData.vrmAnimations && gltf.userData.vrmAnimations.length > 0) {
+              clip = createVRMAnimationClip(gltf.userData.vrmAnimations[0], vrm);
+            } else if (gltf.animations && gltf.animations.length > 0) {
+              clip = gltf.animations[0];
+            }
+
+            if (clip) {
+              // Gán tên cho clip để tránh lỗi nếu không có
+              clip.name = animName;
+              const action = mixer.clipAction(clip);
+              animationsRef.current[animName] = action;
+              playAction(action);
+            } else {
+              console.error(`Không tìm thấy animation trong file: ${animName}`);
+            }
+          },
+          undefined,
+          (err) => {
+            console.error(`Lỗi tải animation: ${animName}`, err);
+            // Fallback sang Idle nếu lỗi
+            if (animName !== 'Idle' && animationsRef.current['Idle']) {
+              playAction(animationsRef.current['Idle']);
+            }
+          }
+        );
+
+      }, [gesture, vrm, mixer]);
+
+      if (!vrm) {
+        return (
+          <Text position={[0, 0, 0]} fontSize={0.2} color="#a78bfa" anchorX="center" anchorY="middle">
+            Đang tải mô hình...
+          </Text>
+        );
+      }
+
+      // Vị trí y = -1.2 để căn người ở giữa khung hình
+      return <primitive object={vrm.scene} position={[0, -1.2, 0]} />;
+    }
+
+    const Scene = ({ gesture }) => {
+      return (
+        <>
+          <ambientLight intensity={1.2} />
+          <directionalLight position={[2, 2, 5]} intensity={1.5} />
+          <directionalLight position={[-2, 2, -5]} intensity={0.5} />
+          <Environment preset="city" />
+          
+          <Avatar gesture={gesture} />
+          
+          {/* Ràng buộc góc nhìn quanh nhân vật */}
+          <OrbitControls 
+            enableZoom={false} 
+            enablePan={false} 
+            minPolarAngle={Math.PI/2 - 0.2} 
+            maxPolarAngle={Math.PI/2 + 0.2}
+            minAzimuthAngle={-0.3}
+            maxAzimuthAngle={0.3}
+          />
+        </>
+      );
+    };
+
+    const App = () => {
+      const [gesture, setGesture] = useState('Idle');
+      
+      useEffect(() => {
+        window.setAvatarGesture = (g) => {
+          setGesture(g);
+        };
+      }, []);
+
+      return (
+        <Canvas camera={{ position: [0, 0.5, 2.5], fov: 40 }}>
+          <Scene gesture={gesture} />
+        </Canvas>
+      );
+    };
+
+    const root = createRoot(document.getElementById('canvas-container'));
+    root.render(<App />);
+  </script>
+
+  <!-- Vanilla JS logic for Chat API -->
+  <script>
+    let chatHistory = [];
+    const chatMessages = document.getElementById('chat-messages');
+    const inputField = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function formatText(text) {
+      return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+    }
+
+    function appendMessage(role, html, products) {
+      const div = document.createElement('div');
+      div.className = 'chat-bubble ' + role;
+      div.innerHTML = html;
+
+      if (products && products.length > 0 && !products[0].type) {
+        const prodList = document.createElement('div');
+        prodList.className = 'product-list';
+        products.forEach(p => {
+          const item = document.createElement('div');
+          item.className = 'product-item';
+          const price = p.price ? Number(p.price).toLocaleString('vi') + 'đ' : 'Liên hệ';
+          item.innerHTML = `
+            <div class="product-item-name">${escapeHtml(p.name)}</div>
+            <div class="product-item-price">${price}</div>
+          `;
+          item.onclick = () => {
+            window.open('https://shopee.vn/search?keyword=' + encodeURIComponent(p.name), '_blank');
+          };
+          prodList.appendChild(item);
+        });
+        div.appendChild(prodList);
+      }
+
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = inputField.value.trim();
+      if(!text) return;
+      
+      inputField.value = '';
+      appendMessage('user', formatText(text));
+      chatHistory.push({ role: 'user', content: text });
+
+      if(window.setAvatarGesture) window.setAvatarGesture('Thinking');
+
+      const typingId = 'typing-' + Date.now();
+      const typingDiv = document.createElement('div');
+      typingDiv.id = typingId;
+      typingDiv.className = 'chat-bubble bot';
+      typingDiv.innerHTML = '<em>Đang suy nghĩ...</em>';
+      chatMessages.appendChild(typingDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      try {
+        const res = await fetch('http://localhost:8000/api/chatbot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: chatHistory.slice(-10),
+            product_id: null
+          })
+        });
+        const data = await res.json();
+        
+        document.getElementById(typingId).remove();
+        const reply = data.reply || 'Xin lỗi, tôi chưa hiểu.';
+        const gesture = data.gesture || 'Idle';
+        
+        appendMessage('bot', formatText(reply), data.products);
+        chatHistory.push({ role: 'model', content: reply });
+        
+        if(window.setAvatarGesture) window.setAvatarGesture(gesture);
+      } catch (err) {
+        document.getElementById(typingId).remove();
+        appendMessage('bot', '⚠️ Lỗi kết nối API');
+        if(window.setAvatarGesture) window.setAvatarGesture('Idle');
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>

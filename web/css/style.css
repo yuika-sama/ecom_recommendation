@@ -740,3 +740,20 @@ body {
   .products-grid { grid-template-columns: 1fr; }
   .filter-bar { flex-direction: column; align-items: flex-start; }
 }
+
+/* ══════════════════════════════════════
+   INFO PANEL
+══════════════════════════════════════ */
+.info-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+.info-icon { font-size: 1.2rem; }
+.info-content { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
+.info-content strong { color: var(--accent-blue); }

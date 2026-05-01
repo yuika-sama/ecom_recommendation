@@ -45,6 +45,10 @@
       <span class="nav-icon">🛍️</span>
       <span>Trang Khách hàng</span>
     </a>
+    <a class="nav-item" href="chatbot.html" id="nav-chatbot">
+      <span class="nav-icon">🤖</span>
+      <span>Chatbot 3D</span>
+    </a>
   </nav>
   <div class="sidebar-footer">
     <span class="api-status" id="api-status">
@@ -135,6 +139,13 @@
       <p class="section-sub">Phân loại bình luận: Tích cực / Tiêu cực bằng Naive Bayes</p>
     </div>
 
+    <div class="info-panel">
+      <div class="info-icon">ℹ️</div>
+      <div class="info-content">
+        <strong>Hướng dẫn sử dụng:</strong> Nhập nội dung đánh giá của khách hàng vào ô trống phía dưới và nhấn "Phân tích". Hệ thống sẽ dùng mô hình AI để dự đoán xem bình luận đó mang sắc thái Tích cực hay Tiêu cực.
+      </div>
+    </div>
+
     <div class="input-card">
       <label class="input-label" for="sentiment-input">Nhập bình luận cần phân tích:</label>
       <textarea
@@ -197,6 +208,13 @@
       <p class="section-sub">Nhóm bình luận theo chủ đề bằng EM (Gaussian Mixture Model)</p>
     </div>
 
+    <div class="info-panel">
+      <div class="info-icon">ℹ️</div>
+      <div class="info-content">
+        <strong>Hướng dẫn sử dụng:</strong> Dùng để tự động gom nhóm các bình luận có nội dung tương tự nhau. Gõ nội dung bình luận cần phân cụm và nhấn "Phân cụm" để xem máy học xếp nó vào nhóm chủ đề nào (Chất lượng, Giao hàng, v.v.).
+      </div>
+    </div>
+
     <div class="input-card">
       <label class="input-label" for="cluster-input">Nhập bình luận cần phân cụm:</label>
       <textarea
@@ -247,6 +265,13 @@
       <p class="section-sub">Các cặp từ thường xuất hiện cùng nhau trong bình luận tiêu cực (FP-Growth)</p>
     </div>
 
+    <div class="info-panel">
+      <div class="info-icon">ℹ️</div>
+      <div class="info-content">
+        <strong>Hướng dẫn sử dụng:</strong> Bảng này phân tích những từ ngữ thường xuất hiện cùng nhau trong các bình luận. Hãy tinh chỉnh thông số Lift / Confidence và nhấn "Lọc" để khám phá các quy luật ẩn sâu trong phản hồi của khách hàng.
+      </div>
+    </div>
+
     <div class="filter-bar">
       <div class="filter-item">
         <label for="filter-lift">Lift tối thiểu</label>
@@ -287,6 +312,13 @@
     <div class="section-header">
       <h1>🎯 Gợi ý Sản phẩm</h1>
       <p class="section-sub">Tìm kiếm sản phẩm thông minh dựa trên Content-based Filtering</p>
+    </div>
+
+    <div class="info-panel">
+      <div class="info-icon">ℹ️</div>
+      <div class="info-content">
+        <strong>Hướng dẫn sử dụng:</strong> Nhập từ khoá (ví dụ: "áo thun", "điện thoại") để hệ thống gợi ý các sản phẩm phù hợp có trong cơ sở dữ liệu dựa trên độ tương đồng về mặt nội dung (Content-based).
+      </div>
     </div>
 
     <div class="search-bar-wrapper">

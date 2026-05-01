@@ -46,9 +46,10 @@ if GEMINI_API_KEY:
                 "Nhiệm vụ: tư vấn sản phẩm, phân tích đánh giá, giải đáp thắc mắc mua sắm.\n"
                 "Quy tắc:\n"
                 "- Luôn trả lời bằng tiếng Việt, thân thiện và ngắn gọn (tối đa 120 từ).\n"
-                "- Nếu cần gợi ý sản phẩm, thêm ở cuối: ##RECOMMEND:từ_khóa##\n"
+                "- Để gợi ý từ hệ thống, thêm ở cuối: ##RECOMMEND:từ_khóa##\n"
+                "- Ngoại trừ hệ thống, bạn có thể tự do suy nghĩ và gợi ý thêm các sản phẩm từ các trang bên ngoài trực tiếp trong câu trả lời (kèm link Shopee/Tiki nếu cần).\n"
                 "- Nếu cần phân tích review, thêm ở cuối: ##SENTIMENT:nội_dung##\n"
-                "- Không bịa thông tin về sản phẩm cụ thể."
+                "- BẮT BUỘC kết thúc câu bằng cử chỉ: ##GESTURE:TênCửChỉ## (chọn 1 trong: Angry, Blush, Clapping, Goodbye, Idle, Jump, LookAround, Relax, Sad, Sleepy, Surprised, Thinking)."
             ),
         )
         logger.info("Gemini AI da ket noi thanh cong (model: %s)", GEMINI_MODEL)
@@ -463,6 +464,23 @@ async def _gemini_chat(message: str, history: list[ChatMessage]) -> dict:
 
         # Phân tích intent từ signal trong response
         intent, query, products = "general", None, None
+        gesture = "Idle"  # Mặc định
+
+        if "##GESTURE:" in raw_text:
+            parts = raw_text.split("##GESTURE:")
+            raw_text = parts[0].strip()
+            gesture_text = parts[1].replace("##", "").strip().lower()
+            
+            valid_gestures_map = {
+                "angry": "Angry", "blush": "Blush", "clapping": "Clapping", 
+                "goodbye": "Goodbye", "idle": "Idle", "jump": "Jump", 
+                "lookaround": "LookAround", "relax": "Relax", "sad": "Sad", 
+                "sleepy": "Sleepy", "surprised": "Surprised", "thinking": "Thinking"
+            }
+            if gesture_text in valid_gestures_map:
+                gesture = valid_gestures_map[gesture_text]
+            else:
+                gesture = "Idle"
 
         if "##RECOMMEND:" in raw_text:
             parts = raw_text.split("##RECOMMEND:")
@@ -494,7 +512,7 @@ async def _gemini_chat(message: str, history: list[ChatMessage]) -> dict:
                     "confidence": round(max(prob) * 100, 1),
                 }]
 
-        return {"reply": raw_text, "intent": intent, "query": query, "products": products}
+        return {"reply": raw_text, "intent": intent, "query": query, "products": products, "gesture": gesture}
 
     except Exception as e:
         logger.error("Gemini error: %s", e)
@@ -519,6 +537,7 @@ async def _rule_based_chat(message: str) -> dict:
                 "intent": "recommend",
                 "query": message,
                 "products": products,
+                "gesture": "Clapping"
             }
 
     # Intent: phân tích review
@@ -534,20 +553,25 @@ async def _rule_based_chat(message: str) -> dict:
             "intent": "sentiment",
             "query": None,
             "products": None,
+            "gesture": "Thinking"
         }
 
     # Fallback chung
     greet_kws = ["xin chào","chào","hello","hi","hey"]
     if any(k in msg_lower for k in greet_kws):
         reply = "Xin chào! Tôi là SentimentIQ Bot 🤖 — trợ lý mua sắm thông minh. Tôi có thể giúp bạn tìm sản phẩm hoặc phân tích đánh giá. Bạn cần gì?"
+        gesture = "Clapping"
     elif "giá" in msg_lower:
         reply = "Bạn có thể tìm sản phẩm theo khoảng giá trong phần 'Gợi ý sản phẩm'. Thử nhập tên sản phẩm để tôi tìm cho bạn nhé!"
+        gesture = "LookAround"
     elif "giúp" in msg_lower or "làm gì" in msg_lower:
         reply = "Tôi có thể:\n• 🔍 Tìm & gợi ý sản phẩm phù hợp\n• 💬 Phân tích đánh giá sản phẩm\n• 🎯 Gợi ý thay thế khi bạn không hài lòng\n\nHãy thử hỏi tôi: 'tìm áo thun nam cotton'!"
+        gesture = "Jump"
     else:
         reply = "Tôi chưa hiểu rõ yêu cầu của bạn. Hãy thử hỏi về sản phẩm cụ thể, ví dụ: 'tìm điện thoại pin trâu' hoặc 'gợi ý kem dưỡng da'!"
+        gesture = "Idle"
 
-    return {"reply": reply, "intent": "general", "query": None, "products": None}
+    return {"reply": reply, "intent": "general", "query": None, "products": None, "gesture": gesture}
 
 
 # ──────────────────────────────────────────────────────────

@@ -346,8 +346,7 @@ function renderRecGrid(products, recType) {
     const card = document.createElement('div');
     card.className = 'rec-card';
     card.onclick = () => {
-      selectProduct(p, i);
-      document.getElementById('section-product').scrollIntoView({ behavior: 'smooth' });
+      window.open(`https://shopee.vn/search?keyword=${encodeURIComponent(p.name || 'Sản phẩm')}`, '_blank');
     };
     card.innerHTML = `
       <span class="rec-type-badge ${badgeClass}">${badgeLabel}</span>
@@ -498,9 +497,7 @@ function appendBubble(role, html, products = null) {
         <span class="chat-product-price">${price}</span>
       `;
       item.onclick = () => {
-        selectProduct(p, i);
-        if (!chatbotOpen) toggleChatbot();
-        document.getElementById('section-product').scrollIntoView({ behavior: 'smooth' });
+        window.open(`https://shopee.vn/search?keyword=${encodeURIComponent(p.name || 'Sản phẩm')}`, '_blank');
       };
       list.appendChild(item);
     });
