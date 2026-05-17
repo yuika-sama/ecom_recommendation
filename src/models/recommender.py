@@ -10,6 +10,9 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# Các cột sẽ trả về khi gợi ý sản phẩm
+RECOMMEND_COLS = ["product_id", "name", "category", "price", "rating", "similarity_score", "url", "location"]
+
 
 class ProductRecommender:
     """
@@ -28,7 +31,16 @@ class ProductRecommender:
         self.tfidf_matrix = None
 
     def fit(self, df_catalog: pd.DataFrame, text_column: str = "combined_text"):
-        """Huấn luyện vectorizer trên danh mục sản phẩm."""
+        """
+        Huấn luyện vectorizer trên danh mục sản phẩm.
+        
+        Args:
+            df_catalog: DataFrame chứa danh sách sản phẩm.
+            text_column: Tên cột chứa văn bản để huấn luyện (đã qua tiền xử lý).
+            
+        Returns:
+            self: Trả về chính đối tượng ProductRecommender sau khi fit.
+        """
         self.df_catalog = df_catalog.reset_index(drop=True)
         self.tfidf_matrix = self.vectorizer.fit_transform(
             df_catalog[text_column].fillna("")
@@ -43,13 +55,16 @@ class ProductRecommender:
         exclude_ids: list | None = None,
     ) -> pd.DataFrame:
         """
-        Gợi ý sản phẩm dựa trên query text.
+        Gợi ý sản phẩm dựa trên query text của người dùng.
 
         Args:
-            query: Từ khóa / mô tả nhu cầu người dùng
-            top_k: Số sản phẩm trả về
-            min_similarity: Ngưỡng cosine similarity tối thiểu
-            exclude_ids: Danh sách product_id cần loại trừ
+            query: Từ khóa / mô tả nhu cầu người dùng.
+            top_k: Số lượng sản phẩm muốn trả về.
+            min_similarity: Ngưỡng cosine similarity tối thiểu để lọc kết quả.
+            exclude_ids: Danh sách product_id cần loại trừ (ví dụ sản phẩm người dùng đang xem).
+            
+        Returns:
+            DataFrame chứa thông tin top_k sản phẩm gợi ý và độ tương đồng (similarity_score).
         """
         if self.tfidf_matrix is None or self.df_catalog is None:
             return pd.DataFrame()
@@ -67,13 +82,12 @@ class ProductRecommender:
         top_idx = top_idx[np.argsort(similarities[top_idx])[::-1]][:top_k]
 
         if len(top_idx) == 0:
-            # Fallback: lấy top_k không cần ngưỡng
+            # Fallback: lấy top_k không cần ngưỡng nếu không có kết quả nào đạt ngưỡng
             top_idx = np.argsort(similarities)[::-1][:top_k]
 
         result = self.df_catalog.iloc[top_idx].copy()
         result["similarity_score"] = similarities[top_idx].round(4)
-        cols = ["product_id", "name", "category", "price", "rating", "similarity_score"]
-        available_cols = [c for c in cols if c in result.columns]
+        available_cols = [c for c in RECOMMEND_COLS if c in result.columns]
         return result[available_cols]
 
     def recommend_similar(
@@ -81,7 +95,16 @@ class ProductRecommender:
         product_id: str,
         top_k: int = 10,
     ) -> pd.DataFrame:
-        """Gợi ý sản phẩm tương tự với sản phẩm đã cho."""
+        """
+        Gợi ý sản phẩm tương tự với một sản phẩm đã có trong danh mục.
+        
+        Args:
+            product_id: ID của sản phẩm gốc.
+            top_k: Số lượng sản phẩm muốn trả về.
+            
+        Returns:
+            DataFrame chứa thông tin các sản phẩm tương tự.
+        """
         if self.tfidf_matrix is None or self.df_catalog is None:
             return pd.DataFrame()
 
@@ -99,12 +122,11 @@ class ProductRecommender:
         top_idx = np.argsort(similarities)[::-1][:top_k]
         result = self.df_catalog.iloc[top_idx].copy()
         result["similarity_score"] = similarities[top_idx].round(4)
-        cols = ["product_id", "name", "category", "price", "rating", "similarity_score"]
-        available_cols = [c for c in cols if c in result.columns]
+        available_cols = [c for c in RECOMMEND_COLS if c in result.columns]
         return result[available_cols]
 
     def get_categories(self) -> list:
-        """Trả về danh sách các danh mục sản phẩm."""
+        """Trả về danh sách tất cả danh mục sản phẩm."""
         if self.df_catalog is None:
             return []
         return sorted(self.df_catalog["category"].dropna().unique().tolist())

@@ -1,9 +1,9 @@
 /**
  * SentimentIQ Client Page — client.js
  * Logic: Product search, Star rating, Review submit, Recommendations, Chatbot, LocalStorage
+ * Phụ thuộc: shared.js (API_BASE, escapeHtml, apiFetch, showLoading, hideLoading, checkApiStatus, initMobileMenu)
  */
 
-const API_BASE    = 'http://localhost:8000';
 const STORAGE_KEY = 'sentimentiq_reviews';
 const EMOJIS      = ['👕','📱','💄','👟','🎮','📚','🍜','💻','⌚','🧴','🎒','🖥️','🎧','🏠','🌿'];
 
@@ -18,53 +18,21 @@ let allCategories   = [];
 // INIT
 // ══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  checkApiStatus();
-  loadCategories();
-  initCharCount();
-  loadHistoryUI();
   initMobileMenu();
+  initProductSearch();
+  initCharCount();
+  loadCategories();
+  loadHistoryUI();
+
+  // Kiểm tra API và cập nhật chatbot subtitle
+  checkApiStatus().then(data => {
+    if (data) {
+      const sub = document.getElementById('chatbot-subtitle');
+      if (sub) sub.textContent = data.gemini ? 'Gemini AI ✨' : 'Rule-based AI';
+    }
+  });
   setInterval(checkApiStatus, 30_000);
 });
-
-function initMobileMenu() {
-  document.getElementById('menu-btn')?.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
-  });
-}
-
-// ══════════════════════════════════════════════════════════
-// API HELPERS
-// ══════════════════════════════════════════════════════════
-async function apiFetch(endpoint, options = {}) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-async function checkApiStatus() {
-  const dot  = document.getElementById('status-dot');
-  const text = document.getElementById('status-text');
-  try {
-    const data = await apiFetch('/');
-    dot.className    = 'status-dot online';
-    text.textContent = 'API đang chạy';
-    // Cập nhật subtitle chatbot nếu có Gemini
-    const sub = document.getElementById('chatbot-subtitle');
-    if (sub) sub.textContent = data.gemini ? 'Gemini AI ✨' : 'Rule-based AI';
-  } catch {
-    dot.className    = 'status-dot offline';
-    text.textContent = 'API offline';
-  }
-}
-
-function showLoading()  { document.getElementById('loading-overlay')?.classList.remove('hidden'); }
-function hideLoading()  { document.getElementById('loading-overlay')?.classList.add('hidden'); }
 
 // ══════════════════════════════════════════════════════════
 // PRODUCT SEARCH
@@ -74,7 +42,7 @@ async function loadCategories() {
     const data = await apiFetch('/api/products?limit=1');
     allCategories = (data.categories || []).slice(0, 12);
     renderCategoryChips();
-  } catch (e) { console.warn('Khong load duoc categories:', e.message); }
+  } catch (e) { console.warn('Không load được categories:', e.message); }
 }
 
 function renderCategoryChips() {
@@ -95,25 +63,24 @@ function renderCategoryChips() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initProductSearch() {
   const input = document.getElementById('product-search-input');
-  if (input) {
-    input.addEventListener('input', (e) => {
-      clearTimeout(searchDebounce);
-      const q = e.target.value.trim();
-      document.getElementById('search-clear')?.classList.toggle('hidden', !q);
-      if (q.length >= 2) {
-        searchDebounce = setTimeout(() => runSearch(q), 350);
-      } else {
-        closeDropdown();
-      }
-    });
-    // Đóng dropdown khi click ngoài
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.product-search-wrap')) closeDropdown();
-    });
-  }
-});
+  if (!input) return;
+  input.addEventListener('input', (e) => {
+    clearTimeout(searchDebounce);
+    const q = e.target.value.trim();
+    document.getElementById('search-clear')?.classList.toggle('hidden', !q);
+    if (q.length >= 2) {
+      searchDebounce = setTimeout(() => runSearch(q), 350);
+    } else {
+      closeDropdown();
+    }
+  });
+  // Đóng dropdown khi click ngoài
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.product-search-wrap')) closeDropdown();
+  });
+}
 
 async function runSearch(query, category = '') {
   const dropdown = document.getElementById('product-dropdown');
@@ -164,7 +131,6 @@ function selectProduct(product, emojiIdx = 0) {
   document.getElementById('selected-product-card').classList.remove('hidden');
   document.getElementById('review-hint').classList.add('hidden');
 
-  // Cập nhật search input
   document.getElementById('product-search-input').value = product.name || '';
   document.getElementById('search-clear')?.classList.remove('hidden');
   closeDropdown();
@@ -201,7 +167,6 @@ function setRating(val) {
 }
 
 function hoverRating(val) { updateStarDisplay(val, true); }
-
 function resetHover() { updateStarDisplay(currentRating); }
 
 function updateStarDisplay(val, isHover = false) {
@@ -285,7 +250,7 @@ function renderResults(data) {
   const isPos = combined === 'Tích cực';
   const isNeg = combined === 'Tiêu cực';
 
-  // --- Sentiment card ---
+  // Sentiment card
   const sc = document.getElementById('rc-sentiment');
   sc.className = `result-card-new ${isPos ? 'positive' : isNeg ? 'negative' : 'neutral'}`;
   document.getElementById('rc-sentiment-icon').textContent = isPos ? '😊' : isNeg ? '😞' : '😐';
@@ -309,12 +274,12 @@ function renderResults(data) {
     document.getElementById('rfbar-neg').style.width = `${negP}%`;
   }, 80);
 
-  // --- Rating card ---
+  // Rating card
   const rating = data.rating || 0;
   document.getElementById('rc-stars').textContent     = '★'.repeat(rating) + '☆'.repeat(5 - rating);
   document.getElementById('rc-rating-val').textContent = data.rating_label || '—';
 
-  // --- Overall card ---
+  // Overall card
   const oc = document.getElementById('rc-overall');
   oc.className = `result-card-new ${isPos ? 'positive' : isNeg ? 'negative' : 'neutral'}`;
   document.getElementById('rc-overall-icon').textContent = isPos ? '✅' : isNeg ? '❌' : '⚠️';
@@ -322,7 +287,7 @@ function renderResults(data) {
   document.getElementById('rc-cluster-val').textContent  = data.cluster?.cluster_name
     ? `Chủ đề: ${data.cluster.cluster_name}` : '';
 
-  // --- Recommendations ---
+  // Recommendations
   const recType = data.rec_type === 'similar' ? 'similar' : 'alternative';
   const titleEl = document.getElementById('rec-title');
   titleEl.textContent = recType === 'similar'
@@ -340,19 +305,25 @@ function renderRecGrid(products, recType) {
   grid.innerHTML = '';
   products.forEach((p, i) => {
     const price = p.price ? `${Number(p.price).toLocaleString('vi')}đ` : 'Liên hệ';
+    const loc   = p.location ? `<div class="rec-cat" style="color:var(--text-secondary);font-size:0.75rem;">📍 ${escapeHtml(p.location)}</div>` : '';
     const score = p.similarity_score ? `Match ${Math.round(p.similarity_score * 100)}%` : '';
     const badgeClass  = recType === 'similar' ? 'badge-similar'     : 'badge-alternative';
     const badgeLabel  = recType === 'similar' ? 'Tương tự'          : 'Thay thế tốt hơn';
     const card = document.createElement('div');
     card.className = 'rec-card';
     card.onclick = () => {
-      window.open(`https://shopee.vn/search?keyword=${encodeURIComponent(p.name || 'Sản phẩm')}`, '_blank');
+      if (p.url) {
+        window.open(p.url, '_blank');
+      } else {
+        window.open(`https://shopee.vn/search?keyword=${encodeURIComponent(p.name || 'Sản phẩm')}`, '_blank');
+      }
     };
     card.innerHTML = `
       <span class="rec-type-badge ${badgeClass}">${badgeLabel}</span>
       <div class="rec-emoji">${EMOJIS[i % EMOJIS.length]}</div>
       <div class="rec-name">${escapeHtml(p.name || 'Sản phẩm')}</div>
       <div class="rec-cat">${escapeHtml(p.category || '')}</div>
+      ${loc}
       <div class="rec-price">${price}</div>
       ${score ? `<div class="rec-score">${score}</div>` : ''}
     `;
@@ -483,7 +454,6 @@ function appendBubble(role, html, products = null) {
   bubble.className = `chat-bubble ${role}`;
   bubble.innerHTML = html;
 
-  // Nếu có sản phẩm đính kèm
   if (products && products.length && !products[0]?.type) {
     const list = document.createElement('div');
     list.className = 'chat-products';
@@ -496,8 +466,11 @@ function appendBubble(role, html, products = null) {
         <span class="chat-product-name">${escapeHtml(p.name || 'Sản phẩm')}</span>
         <span class="chat-product-price">${price}</span>
       `;
-      item.onclick = () => {
-        window.open(`https://shopee.vn/search?keyword=${encodeURIComponent(p.name || 'Sản phẩm')}`, '_blank');
+        if (p.url) {
+          window.open(p.url, '_blank');
+        } else {
+          window.open(`https://shopee.vn/search?keyword=${encodeURIComponent(p.name || 'Sản phẩm')}`, '_blank');
+        }
       };
       list.appendChild(item);
     });
@@ -507,7 +480,6 @@ function appendBubble(role, html, products = null) {
   container.appendChild(bubble);
   scrollChatBottom();
 
-  // Notification badge nếu chatbot đóng
   if (!chatbotOpen && role === 'bot') {
     document.getElementById('fab-badge').classList.remove('hidden');
   }
@@ -542,14 +514,4 @@ function removeTypingIndicator(id) {
 function scrollChatBottom() {
   const el = document.getElementById('chatbot-messages');
   if (el) el.scrollTop = el.scrollHeight;
-}
-
-// ══════════════════════════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════════════════════════
-function escapeHtml(str) {
-  if (typeof str !== 'string') return String(str ?? '');
-  return str
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }

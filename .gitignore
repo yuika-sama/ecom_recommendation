@@ -13,16 +13,15 @@ __pycache__/
 
 # Environment
 .env
-/samples
-__init__.py
 
-# Data and artifacts
-/data/artifacts/*
-!/data/artifacts/.gitkeep
-/data/processed/*
-!/data/processed/.gitkeep
-/data/raw/*
-!/data/raw/.gitkeep
+# Data artifacts (binary, quá lớn cho git)
+datas/models/*.pkl
+datas/models/*.csv
+datas/processed/*.pkl
+datas/processed/*.npz
+datas/processed/*.npy
+datas/processed/*.csv
+datas/processed/*.png
 
 # OS
 .DS_Store

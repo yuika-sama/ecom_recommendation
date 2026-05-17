@@ -1,91 +1,115 @@
-# Phân tích Cảm xúc Bình luận Sản phẩm & Hệ thống Gợi ý
+# SentimentIQ — Hệ thống Phân tích Cảm xúc & Gợi ý Sản phẩm (E-commerce)
 
-> **Chủ đề:** Khai phá Dữ liệu Đa phương tiện trong Thương mại Điện tử  
-> **Nguồn dữ liệu:** Shopee & Tiki (Vietnamese)
+> **Môn học/Chủ đề:** Khai phá Dữ liệu Đa phương tiện trong Thương mại Điện tử
+> **Nguồn dữ liệu:** Shopee & Tiki (Ngôn ngữ: Tiếng Việt)
+
+SentimentIQ là một hệ thống toàn diện ứng dụng Machine Learning và NLP để phân tích bình luận của người dùng trên các sàn thương mại điện tử, từ đó phân lớp cảm xúc, rút trích chủ đề và đưa ra các chiến lược gợi ý sản phẩm phù hợp. Hệ thống bao gồm backend API mạnh mẽ, một dashboard phân tích, một giao diện client mua sắm, và một trợ lý ảo 3D tích hợp AI (Gemini).
 
 ---
 
-## 🗂️ Cấu trúc dự án
+## 🗂️ Cấu trúc Dự án
 
-```
+```text
 ecom_rcm_1/
-├── datas/
-│   ├── sentiment_dataset/          # Dataset bình luận (raw)
-│   └── recommend_dataset/          # Dataset sản phẩm
-├── docs/                           # Tài liệu mô tả & yêu cầu
-├── notebooks/
-│   ├── 01_crawl_and_prepare_data.ipynb     # Phase 1: Thu thập & chuẩn bị dữ liệu
-│   ├── 02_nlp_preprocessing.ipynb          # Phase 2: Tiền xử lý NLP
-│   ├── 03_clustering_classification.ipynb  # Phase 3: Phân cụm & Phân lớp
-│   └── 04_association_rules_recommendation.ipynb  # Phase 4: Luật kết hợp & Gợi ý
-├── samples/                        # Scripts crawl & phân tích mẫu
-├── src/
-│   ├── data/                       # Module xử lý dữ liệu
-│   ├── models/                     # Module mô hình ML
-│   ├── api/                        # FastAPI backend
-│   └── utils/                      # Tiện ích dùng chung
-├── web/
-│   ├── index.html                  # Dashboard chính
-│   ├── css/style.css
-│   └── js/app.js
-├── requirements.txt
-└── README.md
+├── datas/                          # Chứa dữ liệu thô, dữ liệu đã xử lý và models
+├── docs/                           # Tài liệu kỹ thuật & API
+├── notebooks/                      # Các bước phân tích & huấn luyện (cho báo cáo)
+├── src/                            # Source code chính của ứng dụng
+│   ├── api/                        # FastAPI server (routes, services, schemas)
+│   ├── data/                       # Module load & xử lý danh mục sản phẩm
+│   ├── models/                     # Các module Recommender, CF
+│   └── utils/                      # Tiện ích tiền xử lý văn bản tiếng Việt
+├── web/                            # Frontend (Vanilla JS + HTML/CSS)
+│   ├── index.html                  # Dashboard quản trị
+│   ├── client.html                 # Giao diện người dùng mua sắm
+│   ├── chatbot.html                # Giao diện Chatbot 3D (Three.js/VRM)
+│   ├── css/                        # Stylesheets
+│   └── js/                         # JavaScript logic (chứa shared.js)
+├── .env.example                    # File mẫu cấu hình biến môi trường
+├── requirements.txt                # Danh sách thư viện Python
+└── README.md                       # Tài liệu tổng quan này
 ```
 
 ---
 
-## ⚙️ Cài đặt
+## ⚙️ Hướng dẫn Cài đặt & Chạy ứng dụng
+
+### 1. Cài đặt Backend (Python)
+
+Yêu cầu: Python 3.10+
 
 ```bash
-# 1. Kích hoạt virtual environment
-.venv\Scripts\activate     # Windows
-# source .venv/bin/activate  # Linux/Mac
+# Tạo và kích hoạt virtual environment
+python -m venv .venv
+.venv\Scripts\activate     # Trên Windows
+# source .venv/bin/activate  # Trên Linux/Mac
 
-# 2. Cài đặt dependencies
+# Cài đặt thư viện
 pip install -r requirements.txt
 
-# 3. Chạy notebook (chọn 1 trong 4 file)
-jupyter notebook notebooks/
+# Tạo file .env từ template (cần điền GEMINI_API_KEY nếu muốn dùng chatbot AI)
+cp .env.example .env
+```
 
-# 4. Chạy API server
+### 2. Khởi chạy Dịch vụ
+
+**Khởi chạy API Server:**
+```bash
+# Chạy server FastAPI trên cổng 8000
 uvicorn src.api.main:app --reload --port 8000
+```
+API Documentation (Swagger UI) sẽ có sẵn tại: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-# 5. Mở Dashboard
-# Mở web/index.html trong trình duyệt, hoặc:
+**Mở Frontend Web:**
+Bạn có thể mở trực tiếp các file HTML trong thư mục `web/` bằng trình duyệt, hoặc chạy một local server để tránh lỗi CORS đối với mô hình 3D:
+```bash
 python -m http.server 3000 --directory web/
 ```
+Truy cập Dashboard: [http://localhost:3000/](http://localhost:3000/)
 
 ---
 
-## 🔄 Pipeline tổng quan
+## 🧩 Các Tính Năng Cốt Lõi
 
-```
-Thu thập dữ liệu (Shopee/Tiki)
-  └─► Tiền xử lý NLP (làm sạch, tokenize, POS, TF-IDF)
-        ├─► Phân lớp cảm xúc (Naive Bayes)
-        ├─► Phân cụm chủ đề (EM / GMM)
-        ├─► Luật kết hợp (Apriori/FP-Growth) ← bình luận tiêu cực
-        └─► Hệ thống Gợi ý (Content-based + Cosine Similarity)
-              └─► FastAPI Backend ─► Web Dashboard
-```
+1. **Phân tích Cảm xúc (Sentiment Analysis):**
+   - Sử dụng Naive Bayes để phân loại bình luận tiếng Việt (Tích cực / Tiêu cực).
+   - Module tiền xử lý hỗ trợ chuẩn hóa Teencode, tách từ (word segmentation) bằng Underthesea.
 
----
+2. **Hệ thống Gợi ý (Recommender System):**
+   - **Content-based Filtering:** Gợi ý sản phẩm dựa trên TF-IDF và Cosine Similarity của tên & mô tả.
+   - **Collaborative Filtering:** Gợi ý dựa trên ma trận người dùng - sản phẩm (User-User CF).
 
-## 📊 Kết quả mục tiêu
+3. **Phân cụm Chủ đề (Topic Clustering):**
+   - Sử dụng GMM (Gaussian Mixture Model) để nhóm các bình luận thành các chủ đề chính yếu nhằm trích xuất thông tin insight.
 
-| Mô hình | Metric | Mục tiêu |
-|---------|--------|-----------|
-| Naive Bayes | F1-score | ≥ 82% |
-| GMM | Silhouette Score | ≥ 0.35 |
-| Apriori | Lift | ≥ 1.2 |
-| Recommender | Precision@10 | ≥ 60% |
+4. **Trợ lý ảo 3D (AI Chatbot):**
+   - Tích hợp mô hình ngôn ngữ lớn (Google Gemini 2.0 Flash) kết hợp với Retrieval-Augmented Generation (RAG) nội bộ.
+   - Hiển thị nhân vật 3D (.vrm) sử dụng `three-vrm`, có khả năng thay đổi cử chỉ tương ứng với phản hồi.
 
 ---
 
-## 🤖 AI hỗ trợ
+## 🔄 Pipeline Xử Lý Dữ Liệu
 
-Dự án sử dụng **Google Gemini AI** để hỗ trợ:
-- Sinh code boilerplate và module
-- Review code theo chuẩn PEP 8
-- Phân tích kết quả và đề xuất cải thiện
-- Sinh tài liệu và comment tiếng Việt
+Quá trình huấn luyện mô hình được chia thành các bước rõ ràng trong thư mục `notebooks/`:
+- `01_crawl_and_prepare_data.ipynb`: Thu thập & làm sạch dữ liệu ban đầu.
+- `02_nlp_preprocessing.ipynb`: Pipeline xử lý tiếng Việt chuyên sâu.
+- `03_clustering_classification.ipynb`: Huấn luyện mô hình Phân lớp (Naive Bayes) và Phân cụm (GMM).
+- `04_association_rules_recommendation.ipynb`: Xây dựng ma trận gợi ý và lưu mô hình.
+
+---
+
+## 📊 Chỉ Số Hiệu Suất Kỳ Vọng
+
+| Tác Vụ | Thuật Toán | Metric Đánh Giá | Mục Tiêu |
+|--------|------------|-----------------|-----------|
+| Phân loại cảm xúc | Naive Bayes | F1-score | ≥ 82% |
+| Phân cụm nội dung | GMM | Silhouette Score | ≥ 0.35 |
+| Khai phá luật | Apriori | Lift | ≥ 1.2 |
+| Gợi ý sản phẩm | TF-IDF / CF | Precision@10 | ≥ 60% |
+
+---
+
+## 🤖 Bản quyền & Công cụ
+- Nền tảng: Python, FastAPI, Scikit-Learn.
+- Web 3D: Three.js, React Three Fiber, Pixiv VRM.
+- AI Integration: Google Generative AI (Gemini).

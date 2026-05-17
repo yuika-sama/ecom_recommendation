@@ -1,9 +1,8 @@
 /**
  * SentimentIQ Dashboard — app.js
  * Kết nối Web Dashboard với FastAPI Backend
+ * Phụ thuộc: shared.js (API_BASE, escapeHtml, apiFetch, showLoading, hideLoading, checkApiStatus, initMobileMenu)
  */
-
-const API_BASE = 'http://localhost:8000';
 
 // ──────────────────────────────────────────────────────────
 // KHỞI TẠO
@@ -44,63 +43,13 @@ function initNavigation() {
 }
 
 function switchTab(tabId) {
-  // Cập nhật nav active
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById(`nav-${tabId}`)?.classList.add('active');
 
-  // Cập nhật tab pane
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.getElementById(`tab-${tabId}`)?.classList.add('active');
 
-  // Cập nhật topbar title
   document.getElementById('topbar-title').textContent = TAB_TITLES[tabId] || tabId;
-}
-
-// ──────────────────────────────────────────────────────────
-// MOBILE MENU
-// ──────────────────────────────────────────────────────────
-function initMobileMenu() {
-  document.getElementById('menu-btn')?.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
-  });
-}
-
-// ──────────────────────────────────────────────────────────
-// API HELPERS
-// ──────────────────────────────────────────────────────────
-function showLoading() {
-  document.getElementById('loading-overlay')?.classList.remove('hidden');
-}
-function hideLoading() {
-  document.getElementById('loading-overlay')?.classList.add('hidden');
-}
-
-async function apiFetch(endpoint, options = {}) {
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-// ──────────────────────────────────────────────────────────
-// API STATUS
-// ──────────────────────────────────────────────────────────
-async function checkApiStatus() {
-  const dot  = document.getElementById('status-dot');
-  const text = document.getElementById('status-text');
-  try {
-    await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(3000) });
-    dot.className  = 'status-dot online';
-    text.textContent = 'API đang chạy';
-  } catch {
-    dot.className  = 'status-dot offline';
-    text.textContent = 'API offline';
-  }
 }
 
 // ──────────────────────────────────────────────────────────
@@ -131,7 +80,7 @@ async function loadStats() {
     document.getElementById('val-models').textContent = `${readyCount} / ${Object.keys(models).length}`;
     updateModelBadges(models);
   } catch (e) {
-    console.warn('Khong the tai stats:', e.message);
+    console.warn('Không thể tải stats:', e.message);
     document.getElementById('val-total').textContent    = 'Offline';
     document.getElementById('val-positive').textContent = '—';
     document.getElementById('val-negative').textContent = '—';
@@ -141,10 +90,10 @@ async function loadStats() {
 
 function updateModelBadges(models) {
   const badgeNames = {
-    naive_bayes:      'Naive Bayes',
-    gmm_clustering:   'GMM Clustering',
-    recommender:      'Recommender',
-    association_rules:'Assoc. Rules',
+    naive_bayes:       'Naive Bayes',
+    gmm_clustering:    'GMM Clustering',
+    recommender:       'Recommender',
+    association_rules: 'Assoc. Rules',
   };
   const container = document.getElementById('model-badges');
   if (!container) return;
@@ -245,7 +194,6 @@ async function analyzeSentiment() {
     const posScore   = Math.round((data.confidence?.tich_cu ?? 0) * 100);
     const negScore   = Math.round((data.confidence?.tieu_cu ?? 0) * 100);
 
-    // Badge
     const badge = document.getElementById('sentiment-badge');
     badge.textContent = isPositive ? '😊 Tích cực' : '😞 Tiêu cực';
     badge.className   = `result-badge ${isPositive ? 'positive' : 'negative'}`;
@@ -253,7 +201,6 @@ async function analyzeSentiment() {
     document.getElementById('sentiment-confidence').textContent =
       `Độ tin cậy: ${isPositive ? posScore : negScore}%`;
 
-    // Bars (animate with setTimeout for CSS transition)
     setTimeout(() => {
       document.getElementById('bar-positive').style.width = `${posScore}%`;
       document.getElementById('bar-negative').style.width = `${negScore}%`;
@@ -261,12 +208,10 @@ async function analyzeSentiment() {
     document.getElementById('pct-positive').textContent = `${posScore}%`;
     document.getElementById('pct-negative').textContent = `${negScore}%`;
 
-    // Processed text
     document.getElementById('processed-text-display').textContent =
       data.processed_text || '—';
 
     document.getElementById('sentiment-result').classList.remove('hidden');
-
   } catch (e) {
     alert(`Lỗi: ${e.message}\nHãy đảm bảo API server đang chạy.`);
   } finally {
@@ -323,7 +268,6 @@ async function analyzeCluster() {
     });
 
     document.getElementById('cluster-result').classList.remove('hidden');
-
   } catch (e) {
     alert(`Lỗi: ${e.message}`);
   } finally {
@@ -431,17 +375,4 @@ async function searchRecommend() {
   } finally {
     hideLoading();
   }
-}
-
-// ──────────────────────────────────────────────────────────
-// UTILITIES
-// ──────────────────────────────────────────────────────────
-function escapeHtml(str) {
-  if (typeof str !== 'string') return String(str ?? '');
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
