@@ -28,7 +28,7 @@
   <!-- Babel Standalone for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body>
+<body class="chatbot-body">
 
   <!-- 3D Canvas Container -->
   <div id="canvas-container"></div>
@@ -257,7 +257,11 @@
             <div class="product-item-price">${price}</div>
           `;
           item.onclick = () => {
-            window.open('https://shopee.vn/search?keyword=' + encodeURIComponent(p.name), '_blank');
+            if (p.url) {
+              window.open(p.url, '_blank');
+            } else {
+              window.open('https://shopee.vn/search?keyword=' + encodeURIComponent(p.name), '_blank');
+            }
           };
           prodList.appendChild(item);
         });

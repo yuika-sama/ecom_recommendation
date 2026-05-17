@@ -466,6 +466,7 @@ function appendBubble(role, html, products = null) {
         <span class="chat-product-name">${escapeHtml(p.name || 'Sản phẩm')}</span>
         <span class="chat-product-price">${price}</span>
       `;
+      item.onclick = () => {
         if (p.url) {
           window.open(p.url, '_blank');
         } else {
