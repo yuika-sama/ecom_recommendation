@@ -14,15 +14,6 @@ __pycache__/
 # Environment
 .env
 
-# Data artifacts (binary, quá lớn cho git)
-datas/models/*.pkl
-datas/models/*.csv
-datas/processed/*.pkl
-datas/processed/*.npz
-datas/processed/*.npy
-datas/processed/*.csv
-datas/processed/*.png
-
 # OS
 .DS_Store
 Thumbs.db
